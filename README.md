@@ -23,9 +23,9 @@ pip install seaborn
 pip install tensorflow
 ```
 
-#### Run engine.py
+#### Run run.py
 ```
-python engine.py
+python run.py
 ```
 
 #### Make sure...
