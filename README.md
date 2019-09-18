@@ -1,4 +1,4 @@
-# PathToExcel-Jump-Predict-Engine-API
+# PathToExcel-AI-Project
 ## Author @xarmeetx 2019
 ## Contact
 - Discord: [@xarmeetx#7768](https://discord.gg)
@@ -8,8 +8,13 @@
 ##### An engine that uses AI to predict the number of lessons a student must jump back. 
 ##### Based, on certain paramaters and the current lesson ID, the engine will return the final lesson ID
 
-## To Run API 
-#### Install Libraries Locally
+### Requests
+```address/engine?lessonID=_&momentum=_&proficiency=_&difficulty=_&percent=_```
+### Responses
+```response will be a number, the ID of the lesson to jump to as a String```
+
+## To Run
+#### Install Libraries
 ```
 pip install pathlib
 pip install pandas
@@ -18,7 +23,7 @@ pip install seaborn
 pip install tensorflow
 ```
 
-#### Run run.py
+#### Run engine.py
 ```
 python engine.py
 ```
