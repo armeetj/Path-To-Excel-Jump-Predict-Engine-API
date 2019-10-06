@@ -11,51 +11,52 @@ app = Flask(__name__)
 
 @app.route("/")
 def index():
-    with open("C:\\Users\\singh\\Projects\\PathToExcel_JumpPredictEngine_API\\README.md", 'r') as markdown_file:
+    with open("C:\\Users\\singh\\Projects\\Path-To-Excel-Jump-Predict-Engine-API\\APIDocs.md", 'r') as markdown_file:
         content = markdown_file.read()
         return markdown.markdown(content)
 
 @app.route("/engine")
 def engine():
     #0 = not a bad request
-    # = bad request
+    #1 = bad request
     badRequest = 0;
     result = "default result";
+    lessonID = 0;
+    badRequest = 0;
+    momentum = 0;
+    proficiency = 0;
+    difficulty = 0;
+    percent = 0;
+
     if 'lessonID' in request.args:
-        lessonID = request.args.get('lessonID')
+        lessonID = request.args.get('lessonID');
     else:
         result = "please enter all the paramaters: see / for more info";
         badRequest = 1;
 
     if 'momentum' in request.args:
-        lessonID = request.args.get('momentum')
+        momentum = request.args.get('momentum');
     else:
         result = "please enter all the paramaters: see / for more info";
         badRequest = 1;
 
     if 'proficiency' in request.args:
-        lessonID = request.args.get('proficiency')
+        proficiency = request.args.get('proficiency');
     else:
         result = "please enter all the paramaters: see / for more info";
         badRequest = 1;
 
     if 'difficulty' in request.args:
-        lessonID = request.args.get('difficulty')
+        difficulty = request.args.get('difficulty');
     else:
         result = "please enter all the paramaters: see / for more info";
         badRequest = 1;
 
     if 'percent' in request.args:
-        lessonID = request.args.get('percent')
+        percent = request.args.get('percent');
     else:
         result = "please enter all the paramaters: see / for more info";
         badRequest = 1;
-
-    lessonID = request.args.get('lessonID')
-    momentum = request.args.get('momentum')
-    proficiency = request.args.get('proficiency')
-    difficulty = request.args.get('difficulty')
-    percent = request.args.get('percent')
 
     print("lessonID:", end = ' ');
     print(lessonID);
@@ -69,14 +70,30 @@ def engine():
     print(percent);
 
     if(badRequest == 0):
+        print("passing params to tensorFlowEngine")
         result = tensorFlowEngine(lessonID, momentum, proficiency, difficulty, percent)
-    
-    return result
+
+   
+
 
 def tensorFlowEngine(lessonID, momentum, proficiency, difficulty, percent):
-    result = returnNextLessonByID(lessonID, momentum, proficiency, difficulty, percent)
-    return result
-
+    inputString = lessonID + " " + momentum + " " + proficiency + " " + difficulty + " " + percent + " "
+    print("inputString: " + inputString);
+    parsedInput = inputString.split(" ");
+    print("parsedInput: ")
+    print(parsedInput)
+    result = "not found"
+    try:
+        print("running returnNextLessonByID")
+        result = returnNextLessonByID(parsedInput)[0];
+        print('answer:', end = " ")
+        print(result);
+        print();
+        return result;
+    except:
+        print("ERROR");
+        return "ERROR";
+    return result;
 
 
 #================================================#
@@ -100,26 +117,20 @@ Output
 --> output of 0 means the student has to retry the excercise
 '''
 
-print("importing pathlib");
-import pathlib
-#pandas is used for data analysis 
-print("importing pandas");
-import pandas as pd;
-print("importing numpy");
-import numpy as np;
-#importing seaborn, which helps us draw plots/graphs
-print("importing seaborn");
-import seaborn as sns;
-#tensor flow ml library
-print("importing tensorflow");
-import tensorflow as tf;
-print("importing keras");
-from tensorflow import keras;
-print("importing layers");
-from tensorflow.keras import layers;
-print("importing EarlyStopping callback");
-from tensorflow.keras.callbacks import EarlyStopping;
 
+
+print("importing pandas")
+import pandas as pd;
+print("importing numpy")
+import numpy as np;
+print("importing tensorflow")
+import tensorflow as tf;
+print("importing keras from tensorflow")
+from tensorflow import keras;
+print("importing layers from tensorflow.keras")
+from tensorflow.keras import layers;
+print("importing EarlyStopping from tensorflow.keras.callbacks")
+from tensorflow.keras.callbacks import EarlyStopping;
 
 #constants
 EPOCHS = 1000;
@@ -213,6 +224,17 @@ roundedEnginePredictions = enginePredictions;
 
 print('\nFINISHED RUNNING TEST DATA\n');
 
+print('         input         | actual | engine | rounded');
+
+i = 1
+while i < enginePredictions.size:
+    print(testInputNumpy[i], end = '     ');
+    print(testTargetNumpy[i], end = '     ');
+    print(enginePredictions[i][0], end = '     ');
+    roundedEnginePredictions[i] = round(enginePredictions[i][0], 0);
+    print(roundedEnginePredictions[i][0]);
+    i = i + 1;
+
 #================================================#
 # author: xarmeetx (Armeet Singh Jatyani 2019)   #
 #================================================#
@@ -230,40 +252,89 @@ method returnNextLessonByName:
 '''
 
 #return next lesson by the id of the excercise 
-def returnNextLessonByID(lessonID, momentum, proficiency, difficulty, percent):
+def returnNextLessonByID(parsedInput):
     #ID is the first argument
-    ID = lessonID
+    ID = int(parsedInput[0]);
     
     #make the data to pass into the testing
-    data = np.array([[momentum, proficiency, difficulty, percent]])
+    data = np.array([[parsedInput[1], parsedInput[2], parsedInput[3], parsedInput[4]]]);
     #make the prediction
     prediction = jump_predict_engine.predict(data); 
     
-    #count is the prediction
+    #couunt is the prediction
     count = int(prediction[0][0]);
-    print("Prediction:", end = ' ');
+    print("Prediction: ", end = '');
     print(count);
     
     #we keep i so that we can keep track of how much we have jumped back
     i = 0;
     currentId = ID;
     currentName = '';
-    print('Jumping...')
+    print('Jumping: ')
     if count > 0: 
-        print("next lesson...")
-        return ID + 1;
+        currentName = (ConversionTableNumpy.item(currentId));
+        return (ID + 1, currentName);
     elif count == 0: 
-        print('stay at the same lesson...')
-        return ID;
+        currentName = (ConversionTableNumpy.item(currentId - 1));
+        return (ID, currentName);
     elif count < 0:
-        print('jumping back...')
         count = -count;
         while i < count:
-            print('before assignment')
-            currentId = int(BackmapIDNumpy.item(currentId - 1));\
-            print('before print')
+            currentId = int(BackmapIDNumpy.item(currentId - 1));
             print(currentId);
-            print('before increment')
             i = i + 1;
     currentName = (ConversionTableNumpy.item(currentId - 1));
-    return currentId;
+    return (currentId, currentName);
+
+
+
+#return the next lesson by the name of the excercise 
+def returnNextLessonByName(parsedInput):
+    #take the name of the lesson from the parsedInput and concatenate it all into one variable
+    name = (parsedInput[0] + ' ' + parsedInput[1] + ' ' + parsedInput[2]);
+    #find the id of this lesson
+    ID = np.where(ConversionTableNumpy == name)[0][0] + 1;
+    print(ID);
+    #constructing input data for the keras net
+    data = np.array([[parsedInput[3], parsedInput[4], parsedInput[5], parsedInput[6]]]);    
+    
+    #make the prediction
+    prediction = jump_predict_engine.predict(data); 
+    
+    count = int(prediction[0][0]);
+    print("Prediction: ", end = '');
+    print(count);
+    
+    i = 0;
+    currentId = ID;
+    currentName = '';
+    print('Jumping: ')
+    if count > 0: 
+        currentName = (ConversionTableNumpy.item(currentId));
+        return (ID + 1, currentName);
+    elif count == 0: 
+        currentName = (ConversionTableNumpy.item(currentId - 1));
+        return (ID, currentName);
+    elif count < 0:
+        count = -count;
+        while i < count:
+            currentId = int(BackmapIDNumpy.item(currentId - 1));
+            print(currentId);
+            i = i + 1;
+    currentName = (ConversionTableNumpy.item(currentId - 1));
+    return (currentId, currentName);
+
+# the following lines are used to debug locally (will be commented out when hosting api)
+""" while 0 == 0: 
+    print("input: lesson ID, momentum, proficiency, difficulty, percent, jump")
+    inputString = input();
+    if inputString == '-1':
+        break;
+    parsedInput = inputString.split(" ");
+    try:
+        result = returnNextLessonByID(parsedInput);
+        print('answer:', end = " ")
+        print(result);
+        print();
+    except:
+        print("ERROR"); """
