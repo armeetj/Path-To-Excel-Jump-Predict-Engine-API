@@ -64,6 +64,15 @@ def get_one_user():
 #POST   /user/
 @app.route('/api/user', methods=['POST'])
 def create_user():
+    #get request json
+    data = request.get_json()
+
+    #generate a password for the user
+    hashed_password = generate_password_hash(data['password'], method = "sha256")
+
+    #add user to the db
+    new_user = User(public_id=str(uuid.uuid4()), name=data["name"], password = hashed_password, admin = False)
+
     return 'placeholder'
 
 #PUT    /user/username
