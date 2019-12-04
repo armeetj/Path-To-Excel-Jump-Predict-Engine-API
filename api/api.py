@@ -8,6 +8,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import json
 import jwt
 import datetime
+import secrets
 
 #==============================
 #            CONFIG
@@ -32,7 +33,7 @@ db = SQLAlchemy(app)
 class User(db.Model):
     id = db.Column(db.Integer, primary_key = True)
     public_id = db.Column(db.String(50), unique = True)
-    name = db.Column(db.String(50))
+    name = db.Column(db.String(50), unique=True)
     password = db.Column(db.String(80))
     admin = db.Column(db.Boolean)  
 
@@ -134,7 +135,7 @@ def delete_user(public_id):
     response = json.dumps(response)
     return response
 
-#GET /login
+#GET /auth
 @app.route('/api/auth')
 def auth():
     auth = request.authorization
@@ -150,10 +151,8 @@ def auth():
         return json.dumps(response)
 
     if check_password_hash(user.password, auth.password):
-        token = jwt.encode({'public_id':user.public_id, 'exp' : datetime.datetime.utcnow() + datetime.timedelta(minutes=30)}, app.config['SECRET_KEY'])
-        response = {"token": token.decode('UTF-8')}
-        print(response)
-        return json.loads(response)
+        response = {"token": secrets.token_hex(32)}
+        return json.dumps(response)
 
     return make_response('{"message":"Could not verify"}', 401, {'WWW-Authenticate':'Basic realm="login required"'})
 
