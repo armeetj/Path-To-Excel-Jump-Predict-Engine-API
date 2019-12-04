@@ -2,9 +2,11 @@
 #           IMPORTS
 #==============================
 from flask import Flask
+from flask import request
 from flask_sqlalchemy import SQLAlchemy
 import uuid
 from werkzeug.security import generate_password_hash, check_password_hash
+import json
 
 #==============================
 #            CONFIG
@@ -12,7 +14,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 #make new flask app
 app = Flask(__name__)
 
-SECRET_KEY = ""
+SECRET_KEY = "secret"
 SQLALCHEMY_DATABASE_URI = "sqlite:///../db/db.db"
 
 #app key and db location
@@ -54,7 +56,19 @@ def home():
 #GET    /user/
 @app.route('/api/user', methods=['GET'])
 def get_all_users():
-    return 'placeholder'
+    users = User.query.all()
+    response_dict = []
+
+    for user in users:
+        user_data = {}
+        user_data['public_id'] = user.public_id
+        user_data['name'] = user.name
+        user_data['password'] = user.password
+        user_data['admin'] = user.admin
+        response_dict.append(user_data)
+    
+    response = json.dumps(response_dict)
+    return response
 
 #GET    /user/username 
 @app.route('/api/user/<user_id>', methods=['GET'])
@@ -72,8 +86,11 @@ def create_user():
 
     #add user to the db
     new_user = User(public_id=str(uuid.uuid4()), name=data["name"], password = hashed_password, admin = False)
+    db.session.add(new_user)
+    db.session.commit()
 
-    return 'placeholder'
+    response = {"message":"new user created"}
+    return json.dumps(response)
 
 #PUT    /user/username
 @app.route('/api/user/<user_id>', methods=['PUT'])
