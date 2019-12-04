@@ -135,13 +135,13 @@ def delete_user(public_id):
     return response
 
 #GET /login
-@app.route('/api/login')
-def login():
+@app.route('/api/auth')
+def auth():
     auth = request.authorization
 
     if not auth or not auth.username or not auth.password:
         #return auth
-        return make_response('Could not verify', 401, {'WWW-Authenticate':'Basic realm="login required"'})
+        return make_response('{"message":"Could not verify"}', 401, {'WWW-Authenticate':'Basic realm="login required"'})
     
     user = User.query.filter_by(name=auth.username).first()
 
@@ -150,11 +150,12 @@ def login():
         return json.dumps(response)
 
     if check_password_hash(user.password, auth.password):
-        token = jwt.encode({'public_id':user.public_id}, 'exp' : datetime.datetime.utcnow() + datetime.timedelta(minutes=30)}, app.config['SECRET_KEY'])
-        response = {"token": token.encode('UTF-8')}
+        token = jwt.encode({'public_id':user.public_id, 'exp' : datetime.datetime.utcnow() + datetime.timedelta(minutes=30)}, app.config['SECRET_KEY'])
+        response = {"token": token.decode('UTF-8')}
+        print(response)
         return json.loads(response)
 
-    return make_response('Could not verify', 401, {'WWW-Authenticate':'Basic realm="login required"'})
+    return make_response('{"message":"Could not verify"}', 401, {'WWW-Authenticate':'Basic realm="login required"'})
 
     
 #run app 

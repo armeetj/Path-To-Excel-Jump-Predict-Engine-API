@@ -1,2 +1,6 @@
 flask
 flask-sqlalchemy
+werkzeug
+json
+jwt
+datetime
