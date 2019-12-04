@@ -9,6 +9,7 @@ import json
 import jwt
 import datetime
 import secrets
+from functools import wraps
 
 #==============================
 #            CONFIG
@@ -49,22 +50,22 @@ class Todo(db.Model):
 #==============================
 def token_required(f):
     @wraps(f)
-    def decorated(*args, **kwargs):
-        token = None
+    # def decorated(*args, **kwargs):
+    #     token = None
 
-        if 'x-access-token' in request.headers:
-            token = request.headers['x-access-token']
-        if not token
-            return json.dumps({'message': 'token is missing'}), 401
+    #     if 'x-access-token' in request.headers:
+    #         token = request.headers['x-access-token']
+    #     if not token:
+    #         return json.dumps({'message': 'token is missing'}), 401
 
-        try:
-            data = 'token'
-            current_user = User.query.filter_by(public_id=data['public_id']).first() 
-        except:
-            return json.dumps({'message': 'invalid token'}), 401
+    #     try:
+    #         data = 'token'
+    #         current_user = User.query.filter_by(public_id=data['public_id']).first() 
+    #     except:
+    #         return json.dumps({'message': 'invalid token'}), 401
 
-        return f(current_user, *args, **kwargs)
-    return decorated
+    #     return f(current_user, *args, **kwargs)
+    # return decorated
 
 #==============================
 #          APP ROUTES
@@ -81,6 +82,8 @@ def home():
 @app.route('/api/user', methods=['GET'])
 @token_required
 def get_all_users(current_user):
+    if not current_user.admin:
+        return json.dumps({"message":"no auth"})
     users = User.query.all()
     response_dict = []
 
