@@ -1,12 +1,13 @@
 #==============================
 #           IMPORTS
 #==============================
-from flask import Flask
-from flask import request
+from flask import Flask, request, make_response 
 from flask_sqlalchemy import SQLAlchemy
 import uuid
 from werkzeug.security import generate_password_hash, check_password_hash
 import json
+import jwt
+import datetime
 
 #==============================
 #            CONFIG
@@ -71,9 +72,22 @@ def get_all_users():
     return response
 
 #GET    /user/username 
-@app.route('/api/user/<user_id>', methods=['GET'])
-def get_one_user():
-    return 'placeholder'
+@app.route('/api/user/<public_id>', methods=['GET'])
+def get_one_user(public_id):
+    user = User.query.filter_by(public_id=public_id).first()
+    if not user:
+        response = {"message": "no user found"}
+        return json.dumps(response)
+
+    response_dict =[]
+    user_data = {}
+    user_data['public_id'] = user.public_id
+    user_data['name'] = user.name
+    user_data['password'] = user.password
+    user_data['admin'] = user.admin
+    response_dict.append(user_data)
+    response = json.dumps(response_dict)
+    return response
 
 #POST   /user/
 @app.route('/api/user', methods=['POST'])
@@ -93,15 +107,56 @@ def create_user():
     return json.dumps(response)
 
 #PUT    /user/username
-@app.route('/api/user/<user_id>', methods=['PUT'])
-def promote_user():
-    return 'placeholder'
+@app.route('/api/user/<public_id>', methods=['PUT'])
+def promote_user(public_id):
+    user = User.query.filter_by(public_id=public_id).first()
+    if not user:
+        response = {"message": "no user found"}
+        return json.dumps(response)
+    user.admin = True
+    db.session.commit()
+
+    response = {"message": "user promoted to admin"}
+    response = json.dumps(response)
+    return response
 
 #DELETE /user/username
-@app.route('/api/user/<user_id>', methods=['DELETE'])
-def delete_user():
-    return 'placeholder'
+@app.route('/api/user/<public_id>', methods=['DELETE'])
+def delete_user(public_id):
+    user = User.query.filter_by(public_id=public_id).first()
+    if not user:
+        response = {"message": "no user found"}
+        return json.dumps(response)
+    db.session.delete(user)
+    db.session.commit()
 
+    response = {"message": "user has been deleted"}
+    response = json.dumps(response)
+    return response
+
+#GET /login
+@app.route('/api/login')
+def login():
+    auth = request.authorization
+
+    if not auth or not auth.username or not auth.password:
+        #return auth
+        return make_response('Could not verify', 401, {'WWW-Authenticate':'Basic realm="login required"'})
+    
+    user = User.query.filter_by(name=auth.username).first()
+
+    if not user:
+        response = {"message": "no user found"}
+        return json.dumps(response)
+
+    if check_password_hash(user.password, auth.password):
+        token = jwt.encode({'public_id':user.public_id}, 'exp' : datetime.datetime.utcnow() + datetime.timedelta(minutes=30)}, app.config['SECRET_KEY'])
+        response = {"token": token.encode('UTF-8')}
+        return json.loads(response)
+
+    return make_response('Could not verify', 401, {'WWW-Authenticate':'Basic realm="login required"'})
+
+    
 #run app 
 if __name__ == '__main__'  :
     app.run(debug=True)
