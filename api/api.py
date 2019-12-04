@@ -45,6 +45,28 @@ class Todo(db.Model):
     user_id = db.Column(db.Integer)
 
 #==============================
+#         TOKEN WORK
+#==============================
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
+
+        if 'x-access-token' in request.headers:
+            token = request.headers['x-access-token']
+        if not token
+            return json.dumps({'message': 'token is missing'}), 401
+
+        try:
+            data = 'token'
+            current_user = User.query.filter_by(public_id=data['public_id']).first() 
+        except:
+            return json.dumps({'message': 'invalid token'}), 401
+
+        return f(current_user, *args, **kwargs)
+    return decorated
+
+#==============================
 #          APP ROUTES
 #==============================
 #GET    /
@@ -57,7 +79,8 @@ def home():
 
 #GET    /user/
 @app.route('/api/user', methods=['GET'])
-def get_all_users():
+@token_required
+def get_all_users(current_user):
     users = User.query.all()
     response_dict = []
 
@@ -74,7 +97,8 @@ def get_all_users():
 
 #GET    /user/username 
 @app.route('/api/user/<public_id>', methods=['GET'])
-def get_one_user(public_id):
+@token_required
+def get_one_user(current_user,public_id):
     user = User.query.filter_by(public_id=public_id).first()
     if not user:
         response = {"message": "no user found"}
@@ -92,7 +116,8 @@ def get_one_user(public_id):
 
 #POST   /user/
 @app.route('/api/user', methods=['POST'])
-def create_user():
+@token_required
+def create_user(current_user):
     #get request json
     data = request.get_json()
 
@@ -109,7 +134,8 @@ def create_user():
 
 #PUT    /user/username
 @app.route('/api/user/<public_id>', methods=['PUT'])
-def promote_user(public_id):
+@token_required
+def promote_user(current_user,public_id):
     user = User.query.filter_by(public_id=public_id).first()
     if not user:
         response = {"message": "no user found"}
@@ -123,7 +149,8 @@ def promote_user(public_id):
 
 #DELETE /user/username
 @app.route('/api/user/<public_id>', methods=['DELETE'])
-def delete_user(public_id):
+@token_required
+def delete_user(current_user,public_id):
     user = User.query.filter_by(public_id=public_id).first()
     if not user:
         response = {"message": "no user found"}
@@ -137,7 +164,8 @@ def delete_user(public_id):
 
 #GET /auth
 @app.route('/api/auth')
-def auth():
+@token_required
+def auth(current_user):
     auth = request.authorization
 
     if not auth or not auth.username or not auth.password:
@@ -151,7 +179,7 @@ def auth():
         return json.dumps(response)
 
     if check_password_hash(user.password, auth.password):
-        response = {"token": secrets.token_hex(32)}
+        response = {"token": 'token'}
         return json.dumps(response)
 
     return make_response('{"message":"Could not verify"}', 401, {'WWW-Authenticate':'Basic realm="login required"'})
